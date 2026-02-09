@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;600&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="app.js" defer></script>
+    <title>Трекер інцидентів кібербезпеки</title>
+</head>
+
+<body>
+    <header>
+        <h1>Кіберзагрози</h1>
+    </header>
+    <main>
+        <div class="container">
+            <section>
+                <h2>Додати загрозу</h2>
+                <form id="createForm">
+                    <div class="field">
+                        <label for="dateInput">Дата виявлення</label>
+                        <input id="dateInput" name="date" type="date" max="2026-02-08" required>
+                        <p class="error-text" id="dateError"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="tagSelect">Тип інциденту</label>
+                        <select id="tagSelect" name="tag"  required>
+                            <option value="">...</option>
+                            <option value="Malware">Шкідливе ПЗ</option>
+                            <option value="Phishing">Фішинг</option>
+                            <option value="DDoS">DDoS-атака</option>
+                            <option value="Ransomware">Вимагання</option>
+                            <option value="Troyan">Троян</option>
+                            <option value="SQL/XSS">Атака на вебзастосунки (SQL/XSS)</option>
+                        </select>
+                            <p class="error-text" id="tagError"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="criticalitySelect">Критичність</label>
+                        <select id="criticalitySelect" name="criticality" required>
+                            <option value="">...</option>
+                            <option value="NotCritical">Низька критичність</option>
+                            <option value="LittleCritical">Трохи критично</option>
+                            <option value="MediumCritical">Середня критичність</option>
+                            <option value="IntermediumCritical">Відчутна критичність</option>
+                            <option value="MaxCritical">Дуже критично</option>
+                        </select>
+                            <p class="error-text" id="CriticalityError"></p>
+                    </div>
+
+                    <div class="field">
+                            <label for="reporterInput">Хто повідомив</label>
+                            <input id="reporterInput" name="reporter" type="text" placeholder="Ваше ім'я" required minlength="5" maxlength="15"/>
+                            <p class="error-text" id="reporterError"></p>
+                    </div>
+
+                    <div class="field">
+                        <label for="commentInput">Опис інциденту</label>
+                        <textarea id="commentInput" name="description" rows="4" placeholder="Деталі події..." minlength="15" maxlength="50" required></textarea>
+                        <p class="error-text" id="commentError"></p>
+                    </div>
+                    <div class="buttons">
+                        <button type="submit">Відправити інформацію</button>
+                        <button type="reset" id="resetBtn">Скинути</button>
+                    </div>
+                </form>
+            </section>
+            <section id="list-section">
+                <h2>Список інцидентів</h2>
+                <table id="itemsTable">
+                    <caption>Зареєстровані кіберінциденти</caption>
+                    <thead>
+                        <tr>
+                            <th>Порядковий номер</th>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Критичність</th>
+                            <th>Репортер</th>
+                            <th>Опис</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+    <footer>
+        <address>Holy Kaharlyk Empire</address>
+        <h5><a href="https://github.com/MegaKranuk">Author</a></h5>
+        <img id="avatar" src="images/author.jpg"  width="100px" alt="MegaKranuk photo">
+    </footer>
+</body>
+</html>
