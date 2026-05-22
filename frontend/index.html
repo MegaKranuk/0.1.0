@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;600&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script type="module" src="/src/main.ts"></script>
+  <title>Трекер інцидентів кібербезпеки</title>
+</head>
+<body>
+  <header>
+    <h1>Кіберзагрози</h1>
+    <span id="warning"><noscript>Будь ласка, ввімкніть JavaScript</noscript></span>
+    <div class="user-bar">
+      <span id="currentUserDisplay"></span>
+      <button id="logoutBtn" type="button">Вийти</button>
+    </div>
+  </header>
+
+  <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+  <main>
+    <section id="authSection" class="authSection">
+      <div class="auth-card">
+        <h2 id="authTitle">Вхід у систему</h2>
+        <form id="authForm">
+          <div class="field">
+            <label>Логін</label>
+            <input type="text" id="authName" required>
+          </div>
+          <div class="field">
+            <label>Пароль</label>
+            <input type="password" id="authPassword" required>
+          </div>
+          <div class="buttons">
+            <button type="submit" id="authBtn">Увійти</button>
+            <button type="button" id="toggleMode">Створити аккаунт</button>
+          </div>
+        </form>
+      </div>
+    </section>
+    <div class="container" id="appContent">
+      <section class="section-form">
+        <h2>Додати загрозу</h2>
+        <form id="createForm" novalidate>
+          <div class="field">
+            <label for="dateInput">Дата виявлення</label>
+            <input id="dateInput" name="date" type="date" required>
+            <p class="error-text" id="dateError"></p>
+          </div>
+          <div class="field">
+            <label for="tagSelect">Тип інциденту</label>
+            <select id="tagSelect" name="tag" required>
+              <option value="">...</option>
+              <option value="Шкідливе ПЗ">Шкідливе ПЗ</option>
+              <option value="Фішинг">Фішинг</option>
+              <option value="DDoS-атака">DDoS-атака</option>
+              <option value="Вірус-вимагач">Вірус-вимагач</option>
+              <option value="Троян">Троян</option>
+              <option value="SQL/XSS">Атака на вебзастосунки (SQL/XSS)</option>
+            </select>
+            <p class="error-text" id="tagError"></p>
+          </div>
+          <div class="field">
+            <label for="criticalitySelect">Критичність</label>
+            <select id="criticalitySelect" name="criticality" required>
+              <option value="">...</option>
+              <option value="Низька критичність">Низька критичність</option>
+              <option value="Трохи критично">Трохи критично</option>
+              <option value="Середня критичність">Середня критичність</option>
+              <option value="Відчутна критичність">Відчутна критичність</option>
+              <option value="Дуже критично">Дуже критично</option>
+            </select>
+            <p class="error-text" id="criticalityError"></p>
+          </div>
+          <div class="field">
+            <label for="commentInput">Опис інциденту</label>
+            <textarea id="commentInput" name="comment" rows="4"
+                      placeholder="Деталі події..." minlength="15" maxlength="200" required></textarea>
+            <p class="error-text" id="commentError"></p>
+          </div>
+          <div class="buttons">
+            <button type="submit">Відправити інформацію</button>
+            <button type="reset" id="resetBtn">Скинути</button>
+          </div>
+        </form>
+      </section>
+      <section class="section-list" id="list-section">
+        <h2>Список інцидентів</h2>
+        <div class="filters">
+          <div class="filter-group">
+            <label for="filterTag">Тип</label>
+            <select id="filterTag">
+              <option value="">Всі типи</option>
+              <option value="Шкідливе ПЗ">Шкідливе ПЗ</option>
+              <option value="Фішинг">Фішинг</option>
+              <option value="DDoS-атака">DDoS-атака</option>
+              <option value="Вірус-вимагач">Вірус-вимагач</option>
+              <option value="Троян">Троян</option>
+              <option value="SQL/XSS">SQL/XSS</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filterCriticality">Критичність</label>
+            <select id="filterCriticality">
+              <option value="">Всі рівні</option>
+              <option value="Низька критичність">Низька критичність</option>
+              <option value="Трохи критично">Трохи критично</option>
+              <option value="Середня критичність">Середня критичність</option>
+              <option value="Відчутна критичність">Відчутна критичність</option>
+              <option value="Дуже критично">Дуже критично</option>
+            </select>
+          </div>
+          <div class="filter-group filter-group--wide">
+            <label for="filterDescription">Опис</label>
+            <input id="filterDescription" type="search" placeholder="Пошук в описі">
+          </div>
+          <div class="filter-group">
+            <label for="filterPageSize">На сторінці</label>
+            <select id="filterPageSize">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <button id="clearFilters" class="btn-clear">✕ Скинути фільтри</button>
+          <span id="cacheLabel" class="cache-label"></span>
+        </div>
+        <div id="listStatus"></div>
+        <table id="itemsTable">
+          <caption>Зареєстровані кіберінциденти</caption>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th data-field="date">Дата <span>⬍</span></th>
+              <th data-field="tag">Тип <span>⬍</span></th>
+              <th data-field="criticality">Критичність <span>⬍</span></th>
+              <th>Репортер</th>
+              <th>Опис</th>
+              <th>Дії</th>
+            </tr>
+          </thead>
+          <tbody id="itemsTableBody"></tbody>
+        </table>
+        <div id="pagination" class="pagination"></div>
+        <div class="threat-form">
+          <select id="threatTag">
+            <option value="">Виберіть тип інциденту</option>
+            <option value="Шкідливе ПЗ">Шкідливе ПЗ</option>
+            <option value="Фішинг">Фішинг</option>
+            <option value="DDoS-атака">DDoS-атака</option>
+            <option value="Вірус-вимагач">Вірус-вимагач</option>
+            <option value="Троян">Троян</option>
+            <option value="SQL/XSS">SQL/XSS</option>
+          </select>
+          <button id="loadThreatStats">Показати статистику</button>
+        </div>
+        <table id="threatStatsTable">
+          <thead>
+            <tr>
+              <th>Репортер</th>
+              <th>Критичність</th>
+              <th>Опис</th>
+            </tr>
+          </thead>
+          <tbody id="threatStatsBody">
+            <tr>
+              <td colspan="3">Дані не завантажені</td>
+            </tr>
+          </tbody>
+        </table>
+        <section class="details-panel">
+          <h2>Деталі інциденту</h2>
+          <div class="details-actions">
+            <input id="incidentIdInput" type="text" placeholder="ID інциденту">
+            <button id="loadByIdBtn" type="button">Показати</button>
+          </div>
+          <pre id="detailsResult" class="details-result">Оберіть View у таблиці або введіть ID інциденту</pre>
+        </section>
+        <section class="stats-panel">
+          <h2>Зведення</h2>
+          <div class="details-actions">
+            <button id="statsBtn" type="button">Статистика за типами</button>
+            <button id="mostFrequentBtn" type="button">Найчастіші типи</button>
+          </div>
+          <div id="statsResult" class="stats-result">Статистика ще не завантажена</div>
+        </section>
+        <section class="users-panel">
+          <h2>Користувачі</h2>
+          <table id="usersTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Логін</th>
+                <th>ID</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="3">Користувачі ще не завантажені</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </section>
+    </div>
+  </main>
+  <footer>
+    <address>Holy Kaharlyk Empire</address>
+    <h4><a href="https://github.com/MegaKranuk" target="_blank">Author</a></h4>
+    <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">
+      <img id="avatar" src="../images/author.jpg" width="100px" alt="MegaKranuk photo">
+    </a>
+    <div class="Support">
+      <h4>Support:</h4>
+      <p><a href="https://www.youtube.com/watch?v=SKKgX8Rlz6s" target="_blank">Yurii Klinskih</a></p>
+      <p><a href="https://www.youtube.com/watch?v=rCYVN_sYiiQ" target="_blank">Mikhail Gorshnev</a></p>
+    </div>
+  </footer>
+</body>
+</html>

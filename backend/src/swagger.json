@@ -1,0 +1,687 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Cybersecurity Incident Tracker API",
+    "version": "1.0.0",
+    "description": "API documentation for the Cybersecurity Incident Tracker backend"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local backend"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Paste the token returned by /api/v1/auth/login"
+      }
+    },
+    "schemas": {
+      "AuthRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "student"
+          },
+          "password": {
+            "type": "string",
+            "example": "pass1234"
+          }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Registration successful"
+          },
+          "userId": {
+            "type": "string",
+            "example": "2a2ce716-b930-4d0f-8308-391d3483c8b0"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        }
+      },
+      "IncidentInput": {
+        "type": "object",
+        "required": [
+          "date",
+          "tag",
+          "criticality",
+          "reporter",
+          "comment"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-04-25"
+          },
+          "tag": {
+            "type": "string",
+            "example": "DDoS attack"
+          },
+          "criticality": {
+            "type": "string",
+            "example": "Р”СѓР¶Рµ РєСЂРёС‚РёС‡РЅРѕ"
+          },
+          "reporter": {
+            "type": "string",
+            "example": "Administrator"
+          },
+          "comment": {
+            "type": "string",
+            "example": "Detected abnormal traffic on port 443"
+          }
+        }
+      },
+      "Incident": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/IncidentInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "8d8d1787-899b-4b52-8b4a-047698b515e8"
+              },
+              "ownerUserId": {
+                "type": "string",
+                "example": "2a2ce716-b930-4d0f-8308-391d3483c8b0"
+              },
+              "reporterId": {
+                "type": "string",
+                "example": "1b9bd7b3-1a24-4aa8-b8cd-8094e55c16ac"
+              }
+            }
+          }
+        ]
+      },
+      "PaginatedIncidents": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Incident"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "totalItems": {
+                "type": "number",
+                "example": 15
+              },
+              "currentPage": {
+                "type": "number",
+                "example": 1
+              },
+              "pageSize": {
+                "type": "number",
+                "example": 10
+              },
+              "totalPages": {
+                "type": "number",
+                "example": 2
+              }
+            }
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "UNAUTHORIZED"
+              },
+              "message": {
+                "type": "string",
+                "example": "Invalid token"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stack": {
+                "type": "string",
+                "description": "Returned only in development mode"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User already exists"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log in and receive a JWT token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JWT token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Get incidents",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "criticality",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by text inside incident description/comment"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "date",
+                "tag",
+                "criticality",
+                "reporter"
+              ]
+            }
+          },
+          {
+            "name": "sortDir",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "1"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "10"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incident list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedIncidents"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Create an incident",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Incident created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{id}": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Get an incident by id",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incident details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Incident not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Update an incident",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Incident updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Incident not found or access denied"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Delete an incident",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Incident deleted"
+          },
+          "403": {
+            "description": "Current user cannot delete this incident"
+          },
+          "404": {
+            "description": "Incident not found or access denied"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/stats": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Get incident statistics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistics"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/search-vulnerable": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Search incidents",
+        "description": "Keeps the existing search endpoint documented for lab testing.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "DDoS"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/export": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Export incidents as JSON",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exported incidents"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/import": {
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Import incidents from JSON",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IncidentInput"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import result"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/threat-stats": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Get threat statistics by tag",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "DDoS attack"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Threat statistics"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/most-frequent": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Get most frequent incident tags",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Most frequent tags"
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/reporters/{id}": {
+      "delete": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Delete a reporter",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reporter deleted"
+          },
+          "404": {
+            "description": "Reporter not found"
+          }
+        }
+      }
+    }
+  }
+}
