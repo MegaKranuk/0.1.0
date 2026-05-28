@@ -64,17 +64,22 @@ export function renderTable(items: IncidentListItemViewModel[]): void {
 
     const actionCell = document.createElement("td");
 
+    const viewBtn = document.createElement("button");
+    viewBtn.className = "editBtn viewBtn";
+    viewBtn.textContent = "View";
+    viewBtn.setAttribute("data-id", item.id);
+
     const editBtn = document.createElement("button");
     editBtn.className = "editBtn";
     editBtn.textContent = "Ред.";
     editBtn.setAttribute("data-id", item.id);
 
     const deleteBtn = document.createElement("button");
-    deleteBtn.className = "deleteBtn";
+    deleteBtn.className = "deleteBtn deleteIncidentBtn";
     deleteBtn.textContent = "Вид.";
     deleteBtn.setAttribute("data-id", item.id);
-    deleteBtn.setAttribute("data-reporter-id", item.reporterId);
 
+    actionCell.appendChild(viewBtn);
     actionCell.appendChild(editBtn);
     actionCell.appendChild(deleteBtn);
     tr.appendChild(actionCell);
@@ -191,6 +196,60 @@ export function renderThreatStats(items: any[]) {
 
     descCell.appendChild(ul);
     tr.appendChild(descCell);
+    tbody.appendChild(tr);
+  });
+}
+
+export function renderEndpointResult(value: unknown): void {
+  const el = document.getElementById("detailsResult") as HTMLElement;
+  if (!el) return;
+  el.textContent = JSON.stringify(value, null, 2);
+}
+
+export function renderStats(items: any[], mode: "all" | "top" = "all"): void {
+  const el = document.getElementById("statsResult") as HTMLElement;
+  if (!el) return;
+  el.innerHTML = "";
+
+  if (!items?.length) {
+    el.textContent = "Даних немає";
+    return;
+  }
+
+  const title = document.createElement("div");
+  title.className = "stats-title";
+  title.textContent = mode === "top" ? "Топ найчастіших типів" : "Усі типи інцидентів";
+  el.appendChild(title);
+
+  items.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = mode === "top" ? "stat-item stat-item--top" : "stat-item";
+    const prefix = mode === "top" ? `${index + 1}. ` : "";
+    row.textContent = `${prefix}${item.tag ?? "?"}: ${item.incidentCount ?? 0}`;
+    el.appendChild(row);
+  });
+}
+
+export function renderUsers(items: { id: string; name: string }[]): void {
+  const tbody = document.getElementById("usersTableBody") as HTMLTableSectionElement;
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (!items.length) {
+    const tr = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 3;
+    cell.textContent = "Користувачів немає";
+    tr.appendChild(cell);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  items.forEach((user, index) => {
+    const tr = document.createElement("tr");
+    tr.appendChild(td(String(index + 1)));
+    tr.appendChild(td(user.name));
+    tr.appendChild(td(user.id));
     tbody.appendChild(tr);
   });
 }

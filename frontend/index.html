@@ -14,13 +14,16 @@
   <header>
     <h1>Кіберзагрози</h1>
     <span id="warning"><noscript>Будь ласка, ввімкніть JavaScript</noscript></span>
-    <span id="currentUserDisplay" style="margin-right: 15px; font-weight: bold;"></span>
+    <div class="user-bar">
+      <span id="currentUserDisplay"></span>
+      <button id="logoutBtn" type="button">Вийти</button>
+    </div>
   </header>
 
   <div id="notice" class="notice" role="status" aria-live="polite"></div>
 
   <main>
-    <section class="authSection" class="auth-overlay">
+    <section id="authSection" class="authSection">
       <div class="auth-card">
         <h2 id="authTitle">Вхід у систему</h2>
         <form id="authForm">
@@ -39,7 +42,7 @@
         </form>
       </div>
     </section>
-    <div class="container">
+    <div class="container" id="appContent">
       <section class="section-form">
         <h2>Додати загрозу</h2>
         <form id="createForm" novalidate>
@@ -111,6 +114,10 @@
               <option value="Дуже критично">Дуже критично</option>
             </select>
           </div>
+          <div class="filter-group filter-group--wide">
+            <label for="filterDescription">Опис</label>
+            <input id="filterDescription" type="search" placeholder="Пошук в описі">
+          </div>
           <div class="filter-group">
             <label for="filterPageSize">На сторінці</label>
             <select id="filterPageSize">
@@ -166,6 +173,39 @@
             </tr>
           </tbody>
         </table>
+        <section class="details-panel">
+          <h2>Деталі інциденту</h2>
+          <div class="details-actions">
+            <input id="incidentIdInput" type="text" placeholder="ID інциденту">
+            <button id="loadByIdBtn" type="button">Показати</button>
+          </div>
+          <pre id="detailsResult" class="details-result">Оберіть View у таблиці або введіть ID інциденту</pre>
+        </section>
+        <section class="stats-panel">
+          <h2>Зведення</h2>
+          <div class="details-actions">
+            <button id="statsBtn" type="button">Статистика за типами</button>
+            <button id="mostFrequentBtn" type="button">Найчастіші типи</button>
+          </div>
+          <div id="statsResult" class="stats-result">Статистика ще не завантажена</div>
+        </section>
+        <section class="users-panel">
+          <h2>Користувачі</h2>
+          <table id="usersTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Логін</th>
+                <th>ID</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="3">Користувачі ще не завантажені</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
       </section>
     </div>
   </main>

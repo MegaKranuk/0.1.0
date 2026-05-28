@@ -11,9 +11,6 @@ const RETRY_STATUS = new Set([429, 503]);
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 800;
 
-/**
- * Універсальна функція запиту з підтримкою JWT та ретраїв
- */
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -29,8 +26,7 @@ async function request<T>(
     : controller.signal;
 
   const headers = new Headers(options.headers || {});
-  
-  // Додаємо JWT токен, якщо він є у сховищі
+
   const token = localStorage.getItem("jwt_token");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -54,14 +50,10 @@ async function request<T>(
     clearTimeout(timerId);
   }
 
-  // Обробка 401 (Unauthorized) — сесія завершена
   if (response.status === 401) {
     localStorage.removeItem("jwt_token");
-    // Подія для main.ts, щоб показати форму входу
     window.dispatchEvent(new Event("auth_failed"));
   }
-
-  // Повторні спроби для безпечних запитів
   const method = (options.method ?? "GET").toUpperCase();
   if ((method === "GET") && RETRY_STATUS.has(response.status) && attempt < MAX_RETRIES) {
     await new Promise(r => setTimeout(r, RETRY_BASE_DELAY_MS * Math.pow(2, attempt)));
@@ -84,8 +76,6 @@ async function request<T>(
   } as ApiError;
 }
 
-/** * API для автентифікації 
- */
 export const authApi = {
   async login(name: string, passwordRaw: string) {
     const res = await request<{ token: string }>("/auth/login", {
@@ -113,8 +103,8 @@ export const authApi = {
   }
 };
 
-/** * API для інцидентів 
- */
+export const getUsers = () =>
+  request<{ data: { id: string; name: string }[] }>("/auth/users", { method: "GET" });
 export const getIncidents = (params: any, signal?: AbortSignal) => 
   request<IncidentListResponseDto>(`/incidents?${new URLSearchParams(params)}`, { method: "GET" }, signal);
 
@@ -132,11 +122,20 @@ export const updateIncident = (id: string, dto: UpdateIncidentDto) =>
     body: JSON.stringify(dto),
   });
 
-export const deleteReporter = (reporterId: string) => 
-  request<void>(`/incidents/reporters/${reporterId}`, { method: "DELETE" });
+export const getIncidentById = (id: string) =>
+  request<IncidentResponseDto>(`/incidents/${encodeURIComponent(id)}`, { method: "GET" });
+
+export const deleteIncident = (id: string) =>
+  request<void>(`/incidents/${encodeURIComponent(id)}`, { method: "DELETE" });
 
 export const getThreatStats = (tag: string) => 
   request<{ data: any[] }>(`/incidents/threat-stats?tag=${encodeURIComponent(tag)}`);
+
+export const getStats = () =>
+  request<{ data: any[] }>("/incidents/stats", { method: "GET" });
+
+export const getMostFrequent = () =>
+  request<{ data: any[] }>("/incidents/most-frequent", { method: "GET" });
 
 function mergeSignals(...signals: AbortSignal[]) {
   const c = new AbortController();

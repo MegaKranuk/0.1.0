@@ -5,6 +5,7 @@ import { CreateIncidentRequestDto, UpdateIncidentRequestDto, IncidentResponseDto
 interface IncidentQuery {
   tag?: string;
   criticality?: string;
+  description?: string;
   sortBy?: keyof IncidentResponseDto;
   sortDir?: "asc" | "desc";
   page?: string;
@@ -27,34 +28,31 @@ export class IncidentsService {
   constructor(private repo: IncidentsRepository) {}
 
   async getAll(query: IncidentQuery) {
-    let data = await this.repo.findAll();
-
-    if (query.tag) {
-      data = data.filter((i) => i.tag === query.tag);
-    }
-
-    if (query.criticality && ALLOWED_CRITICALITY.has(query.criticality)) {
-      data = data.filter((i) => i.criticality === query.criticality);
-    }
-
-    if (query.sortBy && ALLOWED_SORT_FIELDS.has(query.sortBy)) {
-      const dir = query.sortDir === "desc" ? -1 : 1;
-      const field = query.sortBy;
-      data.sort((a, b) => {
-        if (a[field] > b[field]) return dir;
-        if (a[field] < b[field]) return -dir;
-        return 0;
-      });
-    }
-
     const page = Math.max(1, Number(query.page) || 1);
-    const pageSize = Number(query.pageSize) || data.length || 1;
-    const start = (page - 1) * pageSize;
-    const total = data.length;
+    const pageSize = Number(query.pageSize) || 10;
+
+    const sortBy = query.sortBy && ALLOWED_SORT_FIELDS.has(query.sortBy) ? query.sortBy : undefined;
+    const sortDir = query.sortDir === "desc" ? "desc" : "asc";
+    const criticality = query.criticality && ALLOWED_CRITICALITY.has(query.criticality) ? query.criticality : undefined;
+
+    const { items, total } = await this.repo.findAll({
+      tag: query.tag,
+      criticality,
+      description: query.description,
+      sortBy,
+      sortDir,
+      page,
+      pageSize
+    });
 
     return {
-      items: data.slice(start, start + pageSize),
-      meta: { totalItems: total, currentPage: page, pageSize, totalPages: Math.ceil(total / pageSize) },
+      items,
+      meta: {
+        totalItems: total,
+        currentPage: page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize)
+      },
     };
   }
 
@@ -81,8 +79,14 @@ export class IncidentsService {
   }
 
   async delete(id: string, ownerUserId: string) {
+    const existing = await this.repo.findByIdPublic(id);
+    if (!existing) throw new ApiError(404, "NOT_FOUND", "Інцидент не знайдено");
+    if (existing.ownerUserId !== ownerUserId) {
+      throw new ApiError(403, "FORBIDDEN", "Немає прав для видалення цього інциденту");
+    }
+
     const deleted = await this.repo.delete(id, ownerUserId);
-    if (!deleted) throw new ApiError(404, "NOT_FOUND", "Інцидент не знайдено або доступ заборонено");
+    if (!deleted) throw new ApiError(404, "NOT_FOUND", "Інцидент не знайдено");
   }
 
   async getStats() { return await this.repo.getStats(); }

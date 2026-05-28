@@ -2,9 +2,10 @@
   "name": "backend",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest",
-    "dev": "tsx watch src/app.ts",
-    "build": "tsc"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -18,11 +18,47 @@ body {
 }
 
 header {
+    position: relative;
     text-align: center;
     width: 100%;
     padding: 15px 0;
     border: 2px solid #00f2ff;
     background: rgba(22, 27, 34, 0.95);
+}
+
+.user-bar {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#currentUserDisplay {
+    color: #d7fbff;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.85rem;
+}
+
+#logoutBtn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: #00f2ff;
+    border: 1px solid rgba(0, 242, 255, 0.45);
+    border-radius: 4px;
+    padding: 7px 12px;
+    font-family: 'Exo 2', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+#logoutBtn:hover {
+    background: rgba(0, 242, 255, 0.12);
 }
 
 footer {
@@ -43,10 +79,11 @@ footer {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    gap: 40px;
+    gap: 28px;
     padding: 20px;
     flex: 1;
     width: 100%;
+    max-width: 1600px;
     margin: 0 auto;
 }
 
@@ -200,11 +237,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .buttons button,
 .editBtn,
 .deleteBtn,
-.sortBtn, #loadThreatStats {
+.sortBtn,
+#loadThreatStats,
+.details-panel button,
+.stats-panel button {
     font-family: 'Exo 2', sans-serif;
     border-radius: 4px;
     padding: 10px 20px;
-    margin-right: 10px;
+    margin-right: 20px;
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
@@ -212,7 +252,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.buttons button, #loadThreatStats {
+.buttons button,
+#loadThreatStats,
+.details-panel button,
+.stats-panel button {
     background-color: #00f2ff;
     color: #000;
 }
@@ -300,6 +343,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     min-width: 140px;
 }
 
+.filter-group input {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+}
+
+.filter-group--wide {
+    min-width: 220px;
+    flex: 1;
+}
+
 .btn-clear {
     font-family: 'Exo 2', sans-serif;
     background: transparent;
@@ -376,17 +429,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     color: rgba(255, 255, 255, 0.4);
     margin-right: 4px;
 }
- */
 
 .section-form{
-    min-width: 280px;
+    width: 340px;
+    min-width: 340px;
     max-width: 340px;
     flex-shrink: 0;
+    position: sticky;
+    top: 20px;
 }
 
 .section-list {
     flex: 1;
     min-width: 0;
+}
+
+@media (max-width: 900px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .section-form {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
 }
 
 .threat-form {
@@ -397,4 +465,68 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     min-width: 280px;
     max-width: 340px;
     flex-shrink: 0;
+}
+
+.details-panel,
+.stats-panel,
+.users-panel {
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(0, 242, 255, 0.2);
+}
+
+.details-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.details-actions input {
+    min-width: 260px;
+    flex: 1;
+}
+
+.details-result,
+.stats-result {
+    margin-top: 14px;
+    min-height: 140px;
+    max-height: 360px;
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #d7fbff;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.82rem;
+    white-space: pre-wrap;
+}
+
+.stat-item {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.12);
+}
+
+.stats-title {
+    color: #00f2ff;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.stat-item--top {
+    color: #00f2a0;
+    font-weight: 600;
+}
+
+#usersTable {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+#usersTable td,
+#usersTable th {
+    padding: 10px;
 }

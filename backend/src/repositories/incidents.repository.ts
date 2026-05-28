@@ -4,22 +4,78 @@ import {
   IncidentResponseDto,
   CreateIncidentRequestDto,
   UpdateIncidentRequestDto,
+  FindAllQueryDto,
 } from "../dtos/incidents.dto";
 
 export class IncidentsRepository {
-  async findAll(): Promise<IncidentResponseDto[]> {
-    return await all<IncidentResponseDto>(`
+  async findAll(query: FindAllQueryDto): Promise<{ items: IncidentResponseDto[]; total: number }> {
+    
+    let coreSql = `
+      FROM Incidents i
+      JOIN Reporters r ON i.reporterId = r.id
+      LEFT JOIN Comments c ON c.incidentId = i.id
+    `;
+
+    const whereClauses: string[] = [];
+    const params: unknown[] = [];
+
+    if (query.tag) {
+      whereClauses.push("i.tag = ?");
+      params.push(query.tag);
+    }
+
+    if (query.criticality) {
+      whereClauses.push("i.criticality = ?");
+      params.push(query.criticality);
+    }
+
+    if (query.description) {
+      whereClauses.push("c.text LIKE '%' || ? || '%'");
+      params.push(query.description);
+    }
+
+    if (whereClauses.length > 0) {
+      coreSql += " WHERE " + whereClauses.join(" AND ");
+    }
+
+    const countSql = `SELECT COUNT(*) as count ${coreSql}`;
+    const countResult = await get<{ count: number }>(countSql, params);
+    const total = countResult?.count ?? 0;
+
+    const allowedSortFields: Record<string, string> = {
+      date: "i.date",
+      tag: "i.tag",
+      criticality: "i.criticality",
+      reporter: "r.name",
+    };
+
+    const sortByField = query.sortBy && allowedSortFields[query.sortBy] 
+      ? allowedSortFields[query.sortBy] 
+      : "i.date";
+      
+    const sortDir = query.sortDir === "desc" ? "DESC" : "ASC";
+    coreSql += ` ORDER BY ${sortByField} ${sortDir}`;
+
+    if (query.page && query.pageSize) {
+      const limit = query.pageSize;
+      const offset = (query.page - 1) * query.pageSize;
+      coreSql += " LIMIT ? OFFSET ?";
+      params.push(limit, offset);
+    }
+
+    const selectSql = `
       SELECT
         i.id, i.date, i.tag, i.criticality,
         i.ownerUserId,
         r.id as reporterId,
         r.name as reporter,
         c.text as comment
-      FROM Incidents i
-      JOIN Reporters r ON i.reporterId = r.id
-      LEFT JOIN Comments c ON c.incidentId = i.id
-      ORDER BY i.date DESC
-    `);
+      ${coreSql}
+    `;
+
+    const items = await all<IncidentResponseDto>(selectSql, params);
+
+    return { items, total };
   }
 
   async findById(id: string, ownerUserId: string): Promise<IncidentResponseDto | null> {
@@ -96,8 +152,8 @@ export class IncidentsRepository {
     if (data.criticality) { setClauses.push("criticality = ?"); params.push(data.criticality); }
 
     if (setClauses.length > 0) {
-      params.push(id, ownerUserId);
-      await run(`UPDATE Incidents SET ${setClauses.join(", ")} WHERE id = ? AND ownerUserId = ?`, params);
+      const finalParams = [...params, id, ownerUserId];
+      await run(`UPDATE Incidents SET ${setClauses.join(", ")} WHERE id = ? AND ownerUserId = ?`, finalParams);
     }
 
     if (data.comment) {
@@ -108,9 +164,20 @@ export class IncidentsRepository {
   }
 
   async delete(id: string, ownerUserId: string): Promise<boolean> {
-    const result = await run(
-      `DELETE FROM Incidents WHERE id = ? AND ownerUserId = ?`,
+    const existing = await get<{ id: string }>(
+      `SELECT id FROM Incidents WHERE id = ? AND ownerUserId = ?`,
       [id, ownerUserId]
+    );
+    if (!existing) return false;
+
+    await run(
+      `DELETE FROM Comments WHERE incidentId = ?`,
+      [id]
+    );
+
+    const result = await run(
+      `DELETE FROM Incidents WHERE id = ?`,
+      [id]
     );
     return result.changes > 0;
   }
@@ -126,8 +193,8 @@ export class IncidentsRepository {
 
   async searchVulnerable(query: string) {
     return await all(
-      `SELECT * FROM Incidents WHERE tag LIKE ? ORDER BY date DESC LIMIT 20`,
-      [`%${query}%`]
+      `SELECT * FROM Incidents WHERE tag LIKE '%' || ? || '%' ORDER BY date DESC LIMIT 20`,
+      [query]
     );
   }
 

@@ -1,5 +1,29 @@
-import { getThreatStats, getIncidents, createIncident, updateIncident, deleteReporter, authApi } from "./apiClient";
-import { renderThreatStats, renderListStatus, renderTable, renderPagination, setFormEnabled, clearFieldErrors, showFieldError, showNotice, showApiError } from "./ui";
+import {
+  getThreatStats,
+  getIncidents,
+  createIncident,
+  updateIncident,
+  authApi,
+  getUsers,
+  getIncidentById,
+  deleteIncident,
+  getStats,
+  getMostFrequent,
+} from "./apiClient";
+import {
+  renderThreatStats,
+  renderListStatus,
+  renderTable,
+  renderPagination,
+  setFormEnabled,
+  clearFieldErrors,
+  showFieldError,
+  showNotice,
+  showApiError,
+  renderEndpointResult,
+  renderStats,
+  renderUsers,
+} from "./ui";
 import { cacheGet, cacheSet, invalidateAll } from "./cache";
 import type { ApiError, CreateIncidentDto } from "./dtos";
 import { toListItemViewModel } from "./dtos";
@@ -9,6 +33,7 @@ interface ListState {
   pageSize: number;
   tag: string;
   criticality: string;
+  description: string;
   sortBy: string;
   sortDir: "asc" | "desc";
 }
@@ -18,6 +43,7 @@ const state: ListState = {
   pageSize: 5,
   tag: "",
   criticality: "",
+  description: "",
   sortBy: "",
   sortDir: "asc",
 };
@@ -37,6 +63,7 @@ async function loadList(bustCache = false): Promise<void> {
   };
   if (state.tag) params.tag = state.tag;
   if (state.criticality) params.criticality = state.criticality;
+  if (state.description) params.description = state.description;
   if (state.sortBy) params.sortBy = state.sortBy;
   if (state.sortBy) params.sortDir = state.sortDir;
 
@@ -80,6 +107,15 @@ async function loadList(bustCache = false): Promise<void> {
   }
 }
 
+async function loadUsers(): Promise<void> {
+  try {
+    const result = await getUsers();
+    renderUsers(result.data);
+  } catch (err: unknown) {
+    showApiError(err as ApiError);
+  }
+}
+
 function goToPage(page: number): void {
   state.page = page;
   loadList();
@@ -87,22 +123,28 @@ function goToPage(page: number): void {
 
 function checkAuth() {
   const token = localStorage.getItem("jwt_token");
+  const userName = localStorage.getItem("user_name");
   const authSection = document.getElementById("authSection");
   const appContent = document.getElementById("appContent");
   const logoutBtn = document.getElementById("logoutBtn");
+  const currentUserDisplay = document.getElementById("currentUserDisplay");
 
   if (authSection) {
     authSection.style.display = token ? "none" : "flex";
   }
   if (appContent) {
-    appContent.style.display = token ? "block" : "none";
+    appContent.style.display = token ? "flex" : "none";
   }
   if (logoutBtn) {
-    logoutBtn.style.display = token ? "block" : "none";
+    logoutBtn.style.display = token ? "inline-flex" : "none";
+  }
+  if (currentUserDisplay) {
+    currentUserDisplay.textContent = token && userName ? `Користувач: ${userName}` : "";
   }
 
   if (token) {
     loadList();
+    loadUsers();
   }
 }
 
@@ -140,8 +182,10 @@ document.getElementById("toggleMode")?.addEventListener("click", () => {
   isLoginMode = !isLoginMode;
   const title = document.getElementById("authTitle");
   const btn = document.getElementById("authBtn");
+  const tglMd = document.getElementById ("toggleMode");
   if (title) title.textContent = isLoginMode ? "Вхід у систему" : "Реєстрація";
   if (btn) btn.textContent = isLoginMode ? "Увійти" : "Створити аккаунт";
+  if (tglMd) tglMd.textContent = isLoginMode ? "Створити акаунт" : "Увійти";
 });
 
 document.getElementById("logoutBtn")?.addEventListener("click", () => {
@@ -162,6 +206,12 @@ document.getElementById("filterCriticality")?.addEventListener("change", (e) => 
   loadList();
 });
 
+document.getElementById("filterDescription")?.addEventListener("input", (e) => {
+  state.description = (e.target as HTMLInputElement).value.trim();
+  state.page = 1;
+  loadList();
+});
+
 document.getElementById("filterPageSize")?.addEventListener("change", (e) => {
   state.pageSize = Number((e.target as HTMLSelectElement).value);
   state.page = 1;
@@ -171,11 +221,14 @@ document.getElementById("filterPageSize")?.addEventListener("change", (e) => {
 document.getElementById("clearFilters")?.addEventListener("click", () => {
   state.tag = "";
   state.criticality = "";
+  state.description = "";
   state.page = 1;
   const tagEl = document.getElementById("filterTag") as HTMLSelectElement;
   const critEl = document.getElementById("filterCriticality") as HTMLSelectElement;
+  const descEl = document.getElementById("filterDescription") as HTMLInputElement;
   if (tagEl) tagEl.value = "";
   if (critEl) critEl.value = "";
+  if (descEl) descEl.value = "";
   loadList();
 });
 
@@ -242,22 +295,35 @@ createForm?.addEventListener("submit", async (e: Event) => {
 const tableBody = document.getElementById("itemsTableBody") as HTMLTableSectionElement;
 
 tableBody?.addEventListener("click", async (e) => {
-  const target = e.target as HTMLElement;
+  const target = (e.target as HTMLElement).closest("button") as HTMLButtonElement | null;
+  if (!target) return;
+
   const id = target.dataset.id;
   if (!id) return;
 
-  if (target.classList.contains("deleteBtn")) {
-    const reporterId = target.dataset.reporterId ?? "";
-    if (!confirm("Видалити інцидент та репортера?")) return;
+  if (target.classList.contains("viewBtn")) {
     try {
-      await deleteReporter(reporterId);
+      const item = await getIncidentById(id);
+      renderEndpointResult(item);
+      showNotice("Incident loaded by id");
+    } catch (err: unknown) {
+      showApiError(err as ApiError);
+    }
+    return;
+  }
+
+  if (target.classList.contains("deleteIncidentBtn")) {
+    if (!confirm("Delete this incident?")) return;
+    try {
+      await deleteIncident(id);
       invalidateAll();
-      showNotice("🗑 Видалено");
+      showNotice("Incident deleted");
       if (state.page > 1) state.page = 1;
       await loadList(true);
     } catch (err: unknown) {
       showApiError(err as ApiError);
     }
+    return;
   }
 
   if (target.classList.contains("editBtn")) {
@@ -340,8 +406,45 @@ document.getElementById("loadThreatStats")?.addEventListener("click", async () =
   if (!tagEl) return;
   const tag = tagEl.value;
   if (!tag) return;
-  const result = await getThreatStats(tag);
-  renderThreatStats(result.data);
+  try {
+    const result = await getThreatStats(tag);
+    renderThreatStats(result.data);
+    renderEndpointResult(result);
+  } catch (err: unknown) {
+    showApiError(err as ApiError);
+  }
+});
+
+document.getElementById("loadByIdBtn")?.addEventListener("click", async () => {
+  const input = document.getElementById("incidentIdInput") as HTMLInputElement;
+  const id = input?.value.trim();
+  if (!id) {
+    showNotice("Enter incident id", true);
+    return;
+  }
+  try {
+    renderEndpointResult(await getIncidentById(id));
+  } catch (err: unknown) {
+    showApiError(err as ApiError);
+  }
+});
+
+document.getElementById("statsBtn")?.addEventListener("click", async () => {
+  try {
+    const result = await getStats();
+    renderStats(result.data, "all");
+  } catch (err: unknown) {
+    showApiError(err as ApiError);
+  }
+});
+
+document.getElementById("mostFrequentBtn")?.addEventListener("click", async () => {
+  try {
+    const result = await getMostFrequent();
+    renderStats(result.data, "top");
+  } catch (err: unknown) {
+    showApiError(err as ApiError);
+  }
 });
 
 checkAuth();

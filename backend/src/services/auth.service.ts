@@ -1,11 +1,17 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
-import { get, run } from "../db/dbClient";
+import { all, get, run } from "../db/dbClient";
 import { ApiError } from "../errors/api-error";
 import { JWT_SECRET } from "../config";
 
 export class AuthService {
+  async getUsers() {
+    return await all<{ id: string; name: string }>(
+      "SELECT id, name FROM Users ORDER BY name ASC"
+    );
+  }
+
   async register(name: string, passwordRaw: string) {
     if (!name || !passwordRaw || passwordRaw.length < 4) {
       throw new ApiError(400, "BAD_REQUEST", "Ім'я та пароль (мінімум 4 символи) обов'язкові");
